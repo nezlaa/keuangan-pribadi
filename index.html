@@ -291,7 +291,9 @@ canvas{max-width:100%!important}
 </section>
 
 <section class="page" id="settings">
-  <div class="panel"><div class="panel-title"><h3>Pengaturan Finora</h3></div><div class="form-group"><label>Nama User</label><input id="userName"></div><button class="primary-btn" onclick="saveSettings()">Simpan Pengaturan</button></div>
+  <div class="panel"><div class="panel-title"><h3>Pengaturan Finora</h3></div><div class="form-group"><label>Nama User</label><input id="userName"></div><button class="primary-btn" onclick="saveSettings()">Simpan Pengaturan</button>
+      <button class="secondary-btn" type="button" onclick="loadDemoData()" style="margin-top:10px;width:100%;border:1px solid #dce7f8;background:linear-gradient(135deg,#eef6ff,#fff);color:#0d5cf2;font-weight:700">✨ Muat Data Sampel (Demo)</button>
+      <div class="status safe" style="margin-top:10px">💡 Muat contoh data lengkap untuk melihat tampilan Finora.</div></div>
   <div class="panel"><div class="panel-title"><h3>Reset Data</h3></div><p class="summary">Reset semua data transaksi, target, alokasi, dana darurat, dan nama user.</p><button class="danger-btn" style="margin-top:15px" onclick="resetData()">🔄 Reset Semua Data</button></div>
 </section>
 </main>
@@ -543,6 +545,40 @@ function renderReport(){
   reportInsight.innerHTML=sorted.length?`Kategori pengeluaran terbesar: <strong>${escapeHTML(sorted[0][0])}</strong> sebesar <strong>${money(sorted[0][1])}</strong>.<br><br>${totalRemainingBudget()>0?`<div class="status safe">🎉 Total sisa budget yang belum terpakai: ${money(totalRemainingBudget())}.</div>`:`<div class="status warning">Belum ada sisa budget yang tercatat.</div>`}`:"Belum cukup data untuk membuat insight.";
 }
 function saveSettings(){const n=userName.value.trim();if(n){data.user=n;saveData();updatePeriod();toast("✓ Pengaturan disimpan.","success")}}
+function loadDemoData(){
+  if(!confirm("Muat data sampel demo? Data yang sedang tersimpan akan diganti dengan data contoh.")) return;
+  const y=today.getFullYear(), m=today.getMonth()+1, mm=String(m).padStart(2,"0");
+  const date=d=>`${y}-${mm}-${String(d).padStart(2,"0")}`;
+  data={user:"Nezla",incomes:[
+    {id:1001,source:"Gaji",amount:4000000,date:date(1),note:"Pemasukan utama bulanan"},
+    {id:1002,source:"Freelance",amount:750000,date:date(5),note:"Project input data"},
+    {id:1003,source:"Bonus",amount:250000,date:date(10),note:"Bonus pekerjaan"}],
+    expenses:[
+    {id:2001,name:"Makan siang",amount:25000,category:"Makanan",date:date(1),note:"Makan siang"},
+    {id:2002,name:"Transportasi",amount:15000,category:"Transportasi",date:date(2),note:"Ojek"},
+    {id:2003,name:"Kopi",amount:20000,category:"Makanan",date:date(3),note:"Coffee"},
+    {id:2004,name:"Belanja bulanan",amount:275000,category:"Belanja",date:date(4),note:"Kebutuhan rumah"},
+    {id:2005,name:"Internet",amount:150000,category:"Tagihan",date:date(5),note:"Tagihan internet"},
+    {id:2006,name:"Makan malam",amount:35000,category:"Makanan",date:date(6),note:"Dinner"},
+    {id:2007,name:"Bensin",amount:50000,category:"Transportasi",date:date(7),note:"Isi bensin"},
+    {id:2008,name:"Nonton film",amount:75000,category:"Hiburan",date:date(8),note:"Weekend"},
+    {id:2009,name:"Buku kuliah",amount:120000,category:"Pendidikan",date:date(9),note:"Referensi kuliah"},
+    {id:2010,name:"Obat & vitamin",amount:85000,category:"Kesehatan",date:date(10),note:"Kebutuhan kesehatan"},
+    {id:2011,name:"Makan siang",amount:30000,category:"Makanan",date:date(11),note:"Makan siang"},
+    {id:2012,name:"Transportasi",amount:18000,category:"Transportasi",date:date(12),note:"Perjalanan"},
+    {id:2013,name:"Laundry",amount:45000,category:"Lainnya",date:date(13),note:"Laundry"},
+    {id:2014,name:"Skincare",amount:110000,category:"Belanja",date:date(14),note:"Perawatan pribadi"}],
+    savings:[
+    {id:3001,name:"Laptop",target:8000000,current:3000000,date:`${y+1}-${mm}-15`},
+    {id:3002,name:"Liburan",target:3000000,current:1200000,date:`${y+1}-12-15`},
+    {id:3003,name:"Pendidikan",target:5000000,current:2250000,date:`${y+1}-08-15`}],
+    emergency:{target:12000000,current:4000000,monthly:500000},
+    allocations:{saving:1000000,emergency:500000,mandatory:500000,other:0}};
+  saveData(); selectedMonth=`${y}-${mm}`; calendarDate=new Date(y,m-1,1); selectedDate=formatDate(today);
+  document.getElementById("monthPicker").value=selectedMonth; userName.value=data.user; incomeDate.value=formatDate(today); expenseDate.value=formatDate(today);
+  updatePeriod(); renderAll(); toast("✨ Data sampel berhasil dimuat! Finora siap dijelajahi.","success");
+}
+
 function resetData(){
   if(!confirm("⚠️ Reset semua data Finora?"))return;
   if(!confirm("Tindakan ini tidak dapat dibatalkan. Yakin ingin menghapus SEMUA DATA?"))return;
