@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1464ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Finora — Personal Financial Planner</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{
+  --primary:#5b5bd6;--primary2:#eeeeff;--green:#16a34a;--green2:#eaf8ef;
+  --red:#dc2626;--red2:#fff0f0;--yellow:#d97706;--yellow2:#fff7e6;
+  --dark:#202038;--text:#5c5c72;--muted:#9292a8;--bg:#f6f7fb;
+  --white:#fff;--border:#e7e7ef;--shadow:0 8px 25px rgba(40,40,80,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--dark)}
+button,input,select,textarea{font-family:inherit}button{cursor:pointer}
+.app{display:flex;min-height:100vh}
+.sidebar{width:250px;background:#fff;border-right:1px solid var(--border);padding:25px 16px;position:fixed;inset:0 auto 0 0;z-index:100}
+.logo{padding:0 12px 24px}.logo h2{color:var(--primary);font-size:25px}.logo p{color:var(--muted);font-size:11px;margin-top:4px}
+.user-box{background:var(--primary2);padding:12px;border-radius:14px;margin-bottom:20px}.user-box strong{display:block;font-size:14px}.user-box span{color:var(--muted);font-size:12px}
+.nav{display:flex;flex-direction:column;gap:4px}.nav button{border:0;background:transparent;padding:11px 13px;border-radius:11px;text-align:left;color:var(--text);font-size:14px;transition:.2s}.nav button:hover,.nav button.active{background:var(--primary2);color:var(--primary);font-weight:600}.nav-divider{height:1px;background:var(--border);margin:13px 10px}.reset-btn{color:var(--red)!important}.reset-btn:hover{background:var(--red2)!important}
+.main{margin-left:250px;width:calc(100% - 250px);padding:30px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}.topbar h1{font-size:26px}.topbar p{color:var(--muted);font-size:13px;margin-top:5px}
+.month-select{padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.page{display:none}.page.active{display:block}
+.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:15px;margin-bottom:20px}
+.card,.panel{background:#fff;border:1px solid var(--border);border-radius:17px;box-shadow:var(--shadow)}
+.card{padding:18px}.card-label{color:var(--muted);font-size:12px;margin-bottom:8px}.card-value{font-size:19px;font-weight:700}.card-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;background:var(--primary2)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.panel{padding:20px;margin-bottom:20px}.panel-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.panel-title h3{font-size:16px}.panel-title span{color:var(--muted);font-size:12px}
+.summary{line-height:1.8;color:var(--text);font-size:14px}.summary strong{color:var(--dark)}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.form-group{display:flex;flex-direction:column;gap:6px}.form-group.full{grid-column:1/-1}.form-group label{font-size:12px;color:var(--text);font-weight:600}
+.form-group input,.form-group select,.form-group textarea{border:1px solid var(--border);border-radius:10px;padding:11px 12px;outline:none;background:#fff}.form-group textarea{resize:vertical}.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--primary)}
+.primary-btn{background:var(--primary);color:#fff;border:0;padding:11px 17px;border-radius:10px;margin-top:15px;font-weight:600}.secondary-btn{background:#f2f2f7;color:var(--dark);border:0;padding:10px 15px;border-radius:10px}.danger-btn{background:var(--red2);color:var(--red);border:0;padding:8px 12px;border-radius:8px}
+.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:620px}th,td{padding:13px 10px;text-align:left;border-bottom:1px solid var(--border);font-size:13px}th{color:var(--muted);font-size:11px;text-transform:uppercase}.income{color:var(--green)}.expense{color:var(--red)}
+.budget-main{text-align:center;padding:25px}.budget-number{font-size:38px;font-weight:800;color:var(--primary);margin:10px 0}.progress{width:100%;height:9px;background:#eeeef4;border-radius:20px;overflow:hidden}.progress-bar{height:100%;background:var(--primary);border-radius:20px;transition:.3s}.progress-bar.green{background:var(--green)}.progress-bar.red{background:var(--red)}
+.status{padding:11px;border-radius:10px;margin-top:15px;font-size:13px}.status.safe{background:var(--green2);color:var(--green)}.status.warning{background:var(--yellow2);color:var(--yellow)}.status.danger{background:var(--red2);color:var(--red)}
+.day-list{display:flex;flex-direction:column;gap:10px}.day-item{display:flex;justify-content:space-between;align-items:center;padding:13px;border:1px solid var(--border);border-radius:12px}.day-item small{color:var(--muted)}.day-total{font-weight:700}
+.calendar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.calendar-head button{border:0;background:var(--primary2);color:var(--primary);width:35px;height:35px;border-radius:9px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.calendar-day-name{text-align:center;color:var(--muted);font-size:11px;padding:8px 0}.calendar-cell{min-height:75px;background:#fafafd;border:1px solid var(--border);border-radius:10px;padding:8px;cursor:pointer}.calendar-cell:hover{border-color:var(--primary)}.calendar-cell.today{border:2px solid var(--primary)}.calendar-cell.selected{background:var(--primary2)}.calendar-cell .date{font-size:12px;font-weight:700}.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-top:8px}.dot.green{background:var(--green)}.dot.yellow{background:var(--yellow)}.dot.red{background:var(--red)}
+.target-header{display:flex;justify-content:space-between;margin-bottom:12px}.target-amount{font-weight:700;margin:8px 0}.target-info{color:var(--muted);font-size:12px;margin-top:8px}.empty{text-align:center;color:var(--muted);padding:25px;font-size:13px}
+.remaining-hero{background:linear-gradient(135deg,#f0f0ff,#fff);border:1px solid #dddfff;border-radius:18px;padding:24px}.remaining-number{font-size:36px;font-weight:800;color:var(--green);margin:8px 0}.mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.mini-stat{background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px}.mini-stat span{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.mini-stat strong{font-size:14px}
+.toast-wrap{position:fixed;right:22px;bottom:22px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:360px}.toast{background:#fff;border:1px solid var(--border);box-shadow:0 12px 30px rgba(30,30,60,.13);border-radius:13px;padding:14px 16px;font-size:13px}.toast.success{border-left:4px solid var(--green)}.toast.warning{border-left:4px solid var(--yellow)}.toast.danger{border-left:4px solid var(--red)}
+.mobile-menu{display:none}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(3,1fr)}.grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:800px){.sidebar{transform:translateX(-100%);transition:.3s}.sidebar.open{transform:translateX(0)}.main{margin-left:0;width:100%;padding:20px 15px}.mobile-menu{display:block;border:0;background:var(--primary2);color:var(--primary);width:40px;height:40px;border-radius:10px}.topbar{gap:12px}.topbar h1{font-size:21px}.cards{grid-template-columns:1fr 1fr}.grid-2,.grid-3{grid-template-columns:1fr}}
+@media(max-width:500px){.form-grid{grid-template-columns:1fr}.form-group.full{grid-column:auto}.calendar-cell{min-height:52px;padding:5px}.budget-number,.remaining-number{font-size:30px}.mini-stats{grid-template-columns:1fr}.topbar{align-items:flex-start}.month-select{max-width:125px}}
+
+/* ===== Finora visual polish & mobile experience ===== */
+html{scroll-behavior:smooth}
+body{background:
+  radial-gradient(circle at 8% 5%,rgba(20,100,255,.10),transparent 24%),
+  radial-gradient(circle at 92% 12%,rgba(67,182,255,.10),transparent 22%),
+  linear-gradient(135deg,#f7faff 0%,#f5f8ff 48%,#eef5ff 100%);}
+body:before,body:after{content:"";position:fixed;z-index:-1;border-radius:50%;filter:blur(3px);pointer-events:none}
+body:before{width:260px;height:260px;left:-120px;bottom:10%;background:rgba(20,100,255,.06)}
+body:after{width:320px;height:320px;right:-150px;top:45%;background:rgba(91,190,255,.07)}
+.sidebar{background:rgba(255,255,255,.92);backdrop-filter:blur(18px);box-shadow:8px 0 35px rgba(22,70,150,.06)}
+.logo h2{background:linear-gradient(135deg,#0d55df,#35a7ff);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.5px}
+.logo p{line-height:1.45}
+.user-box{background:linear-gradient(135deg,#eaf3ff,#f6fbff);border:1px solid #dceaff;box-shadow:inset 0 1px rgba(255,255,255,.8)}
+.nav button{position:relative}
+.nav button:hover{transform:translateX(2px)}
+.nav button.active{box-shadow:0 7px 18px rgba(20,100,255,.10)}
+.main{padding-bottom:70px}
+.topbar{position:sticky;top:0;z-index:40;padding:12px 0 18px;background:linear-gradient(180deg,rgba(247,250,255,.96) 75%,rgba(247,250,255,0));backdrop-filter:blur(8px)}
+.topbar h1{letter-spacing:-.6px}
+.topbar p{line-height:1.4}
+.month-select{box-shadow:0 5px 16px rgba(20,70,140,.06);transition:.2s}
+.month-select:focus{border-color:#7fb0ff;box-shadow:0 0 0 4px rgba(20,100,255,.08);outline:none}
+.card,.panel{box-shadow:0 10px 28px rgba(26,67,130,.065);transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;overflow:hidden}
+.card:hover,.panel:hover{transform:translateY(-2px);box-shadow:0 16px 35px rgba(26,67,130,.10);border-color:#d7e5ff}
+.card{position:relative;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(248,251,255,.98))}
+.card:after{content:"";position:absolute;right:-25px;top:-30px;width:85px;height:85px;border-radius:50%;background:rgba(20,100,255,.055)}
+.card-icon{background:linear-gradient(135deg,#e7f0ff,#f3f8ff);box-shadow:0 5px 12px rgba(20,100,255,.08);position:relative;z-index:1}
+.card-value{position:relative;z-index:1}
+.panel-title{gap:12px}.panel-title h3{letter-spacing:-.2px}
+.primary-btn{background:linear-gradient(135deg,#0d5cf2,#238cff);box-shadow:0 8px 18px rgba(20,100,255,.20);transition:.2s}
+.primary-btn:hover{transform:translateY(-1px);box-shadow:0 11px 22px rgba(20,100,255,.26)}
+.secondary-btn,.danger-btn{transition:.2s}.secondary-btn:hover,.danger-btn:hover{transform:translateY(-1px)}
+.form-group input,.form-group select,.form-group textarea{transition:.2s;box-shadow:0 2px 8px rgba(20,70,140,.025)}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#5d9cff;box-shadow:0 0 0 4px rgba(20,100,255,.08)}
+.progress{box-shadow:inset 0 1px 3px rgba(30,70,120,.08)}
+.progress-bar{background:linear-gradient(90deg,#0d5cf2,#42a5ff)}
+.progress-bar.green{background:linear-gradient(90deg,#11a85b,#55d98a)}
+.remaining-hero{background:radial-gradient(circle at 90% 15%,rgba(61,169,255,.16),transparent 30%),linear-gradient(135deg,#eef6ff,#ffffff 58%,#f1fbff);box-shadow:0 12px 30px rgba(20,100,255,.08)}
+.remaining-number{background:linear-gradient(90deg,#0b9a58,#19c875);-webkit-background-clip:text;background-clip:text;color:transparent}
+.budget-main{background:radial-gradient(circle at 50% 0%,rgba(20,100,255,.08),transparent 38%)}
+.budget-number{background:linear-gradient(90deg,#0d5cf2,#2da5ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.calendar-cell{transition:.18s;box-shadow:0 2px 7px rgba(30,70,120,.025)}
+.calendar-cell:hover{transform:translateY(-2px);box-shadow:0 7px 15px rgba(20,100,255,.09)}
+.calendar-cell.selected{box-shadow:inset 0 0 0 1px rgba(20,100,255,.15)}
+.toast{backdrop-filter:blur(12px);animation:toastIn .28s ease both}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.page.active{animation:pageIn .25s ease both}
+@keyframes pageIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+canvas{max-width:100%!important}
+.mobile-overlay{display:none}
+.mobile-bottom-nav{display:none}
+.autosave-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #dceaff;background:rgba(255,255,255,.78);border-radius:999px;color:#5f779b;font-size:11px;white-space:nowrap}
+.autosave-dot{width:7px;height:7px;border-radius:50%;background:#18b866;box-shadow:0 0 0 4px rgba(24,184,102,.10)}
+@media(max-width:800px){
+  body{padding-bottom:72px}
+  .sidebar{width:min(285px,86vw);box-shadow:14px 0 40px rgba(16,50,100,.16)}
+  .mobile-overlay{display:block;position:fixed;inset:0;background:rgba(9,30,65,.28);backdrop-filter:blur(3px);z-index:90;opacity:0;visibility:hidden;transition:.25s}
+  .mobile-overlay.show{opacity:1;visibility:visible}
+  .main{padding:10px 12px 30px}
+  .topbar{padding:8px 0 14px;top:0}
+  .topbar>div:last-child{display:flex;align-items:center;gap:7px}
+  .topbar h1{font-size:20px}.topbar p{font-size:11px;max-width:180px}
+  .autosave-badge{display:none}
+  .month-select{font-size:12px;padding:9px 9px;max-width:120px}
+  .cards{gap:10px}.card{padding:14px;border-radius:15px}.card-label{font-size:11px}.card-value{font-size:16px}.card-icon{width:32px;height:32px;margin-bottom:9px}
+  .grid-2,.grid-3{gap:12px}.panel{padding:15px;border-radius:15px;margin-bottom:12px}.panel-title{margin-bottom:14px}.panel-title h3{font-size:14px}
+  .form-grid{gap:11px}.form-group input,.form-group select,.form-group textarea{font-size:14px;padding:11px}
+  .primary-btn{width:100%;padding:12px}
+  .table-wrap{margin:0 -2px}
+  .calendar-grid{gap:4px}.calendar-cell{min-height:57px;padding:6px;border-radius:9px}.calendar-day-name{font-size:10px}.calendar-cell .date{font-size:11px}
+  .budget-main{padding:18px 12px}.budget-number,.remaining-number{font-size:29px}
+  .day-item{padding:11px}.day-item small{font-size:11px}
+  .toast-wrap{left:12px;right:12px;bottom:84px;max-width:none}.toast{font-size:12px}
+  .mobile-bottom-nav{position:fixed;display:grid;grid-template-columns:repeat(5,1fr);left:10px;right:10px;bottom:10px;height:62px;background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border:1px solid #dce7f8;border-radius:20px;box-shadow:0 14px 35px rgba(20,60,120,.16);z-index:80;padding:5px}
+  .mobile-bottom-nav button{border:0;background:transparent;border-radius:15px;color:#7184a1;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  .mobile-bottom-nav button span{font-size:18px;line-height:18px}.mobile-bottom-nav button.active{background:#eaf3ff;color:#0d5cf2;font-weight:700}
+}
+@media(max-width:500px){
+  .cards{grid-template-columns:1fr 1fr}.topbar{align-items:center}.topbar>div:last-child{gap:5px}.month-select{max-width:108px}
+  .summary{font-size:13px}.mini-stats{grid-template-columns:1fr 1fr}.mini-stat{padding:10px}
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="logo"><h2>Finora.</h2><p>Plan Your Money. Control Your Future.</p></div>
+  <div class="user-box"><strong id="sidebarUser">User</strong><span id="sidebarPeriod"></span></div>
+  <nav class="nav">
+    <button class="active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
+    <button onclick="showPage('income',this)">💰 Pemasukan</button>
+    <button onclick="showPage('expense',this)">💸 Pengeluaran</button>
+    <button onclick="showPage('calendar',this)">📅 Kalender</button>
+    <button onclick="showPage('budget',this)">🎯 Budget Harian</button>
+    <button onclick="showPage('remaining',this)">💎 Sisa Budget</button>
+    <button onclick="showPage('saving',this)">🏦 Tabungan</button>
+    <button onclick="showPage('emergency',this)">🛡️ Dana Darurat</button>
+    <button onclick="showPage('report',this)">📈 Laporan</button>
+    <button onclick="showPage('settings',this)">⚙️ Pengaturan</button>
+    <div class="nav-divider"></div>
+    <button class="reset-btn" onclick="resetData()">🔄 Reset Data</button>
+  </nav>
+</aside>
+
+<main class="main">
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <button class="mobile-menu" onclick="toggleSidebar()">☰</button>
+    <div><h1 id="pageTitle">Dashboard</h1><p id="pageSubtitle">Ringkasan kondisi keuangan kamu.</p></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:9px"><span class="autosave-badge"><span class="autosave-dot"></span> Tersimpan otomatis</span><select class="month-select" id="monthPicker" onchange="changeMonth()"></select></div>
+</header>
+
+<section class="page active" id="dashboard">
+  <div class="cards">
+    <div class="card"><div class="card-icon">💰</div><div class="card-label">Total Pemasukan</div><div class="card-value" id="dashIncome">Rp0</div></div>
+    <div class="card"><div class="card-icon">💸</div><div class="card-label">Total Pengeluaran</div><div class="card-value" id="dashExpense">Rp0</div></div>
+    <div class="card"><div class="card-icon">💳</div><div class="card-label">Saldo Saat Ini</div><div class="card-value" id="dashBalance">Rp0</div></div>
+    <div class="card"><div class="card-icon">🎯</div><div class="card-label">Budget Harian</div><div class="card-value" id="dashBudget">Rp0</div></div>
+    <div class="card"><div class="card-icon">💎</div><div class="card-label">Sisa Budget Bulan Ini</div><div class="card-value" id="dashRemaining">Rp0</div></div>
+    <div class="card"><div class="card-icon">🛡️</div><div class="card-label">Dana Darurat</div><div class="card-value" id="dashEmergency">Rp0</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="panel"><div class="panel-title"><h3>Pemasukan vs Pengeluaran</h3><span>Bulan aktif</span></div><canvas id="incomeExpenseChart"></canvas></div>
+    <div class="panel"><div class="panel-title"><h3>Pengeluaran per Kategori</h3><span>Distribusi</span></div><canvas id="categoryChart"></canvas></div>
+  </div>
+  <div class="grid-2">
+    <div class="panel"><div class="panel-title"><h3>Perkembangan Saldo</h3><span>Harian</span></div><canvas id="balanceChart"></canvas></div>
+    <div class="panel"><div class="panel-title"><h3>Financial Summary</h3></div><div class="summary" id="financialSummary"></div></div>
+  </div>
+  <div class="panel"><div class="panel-title"><h3>Pengeluaran Hari Ini</h3><span id="todayDate"></span></div><div id="todayExpenses" class="day-list"></div></div>
+</section>
+
+<section class="page" id="income">
+  <div class="panel"><div class="panel-title"><h3>Tambah Pemasukan</h3><span>Catat semua sumber pemasukan</span></div>
+    <form id="incomeForm"><div class="form-grid">
+      <div class="form-group"><label>Sumber Pemasukan</label><input id="incomeSource" placeholder="Contoh: Gaji" required></div>
+      <div class="form-group"><label>Jumlah</label><input id="incomeAmount" type="number" min="0" required></div>
+      <div class="form-group"><label>Tanggal</label><input id="incomeDate" type="date" required></div>
+      <div class="form-group"><label>Catatan</label><input id="incomeNote" placeholder="Opsional"></div>
+    </div><button class="primary-btn">+ Tambah Pemasukan</button></form>
+  </div>
+  <div class="panel"><div class="panel-title"><h3>Daftar Pemasukan</h3><span id="incomeTotal"></span></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Sumber</th><th>Nominal</th><th>Catatan</th><th>Aksi</th></tr></thead><tbody id="incomeTable"></tbody></table></div></div>
+</section>
+
+<section class="page" id="expense">
+  <div class="panel"><div class="panel-title"><h3>Tambah Pengeluaran</h3><span>Catat setiap transaksi</span></div>
+    <form id="expenseForm"><div class="form-grid">
+      <div class="form-group"><label>Nama Pengeluaran</label><input id="expenseName" placeholder="Contoh: Makan siang" required></div>
+      <div class="form-group"><label>Nominal</label><input id="expenseAmount" type="number" min="0" required></div>
+      <div class="form-group"><label>Kategori</label><select id="expenseCategory"><option>Makanan</option><option>Transportasi</option><option>Belanja</option><option>Tagihan</option><option>Hiburan</option><option>Kesehatan</option><option>Pendidikan</option><option>Lainnya</option></select></div>
+      <div class="form-group"><label>Tanggal</label><input id="expenseDate" type="date" required></div>
+      <div class="form-group full"><label>Catatan</label><textarea id="expenseNote" rows="2" placeholder="Catatan tambahan..."></textarea></div>
+    </div><button class="primary-btn">+ Tambah Pengeluaran</button></form>
+  </div>
+  <div class="panel"><div class="panel-title"><h3>Daftar Pengeluaran</h3><span id="expenseTotal"></span></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Pengeluaran</th><th>Kategori</th><th>Nominal</th><th>Catatan</th><th>Aksi</th></tr></thead><tbody id="expenseTable"></tbody></table></div></div>
+</section>
+
+<section class="page" id="calendar">
+  <div class="grid-2">
+    <div class="panel"><div class="calendar-head"><button onclick="changeCalendar(-1)">‹</button><h3 id="calendarTitle"></h3><button onclick="changeCalendar(1)">›</button></div><div class="calendar-grid" id="calendarGrid"></div></div>
+    <div class="panel"><div class="panel-title"><h3 id="selectedDateTitle">Detail Hari</h3><span id="selectedDayTotal">Rp0</span></div><div id="selectedDayExpenses"></div></div>
+  </div>
+</section>
+
+<section class="page" id="budget">
+  <div class="grid-2">
+    <div class="panel budget-main"><div class="card-label">Budget dasar per hari</div><div class="budget-number" id="budgetToday">Rp0</div><div class="summary" id="budgetDescription"></div><div id="budgetStatus"></div></div>
+    <div class="panel"><div class="panel-title"><h3>Alokasi Keuangan</h3><span>Per bulan</span></div>
+      <div class="form-group"><label>Tabungan</label><input id="allocationSaving" type="number" min="0"></div><br>
+      <div class="form-group"><label>Dana Darurat</label><input id="allocationEmergency" type="number" min="0"></div><br>
+      <div class="form-group"><label>Pengeluaran Wajib</label><input id="allocationMandatory" type="number" min="0"></div><br>
+      <div class="form-group"><label>Investasi / Alokasi Tambahan</label><input id="allocationOther" type="number" min="0"></div>
+      <button class="primary-btn" onclick="saveAllocations()">Simpan Alokasi</button><div id="allocationWarning"></div>
+    </div>
+  </div>
+  <div class="panel"><div class="panel-title"><h3>Pengeluaran Harian Bulan Ini</h3><span>Budget tetap, penggunaan dinamis</span></div><div id="dailyBudgetList"></div></div>
+</section>
+
+<section class="page" id="remaining">
+  <div class="grid-2">
+    <div class="remaining-hero">
+      <div class="card-label">Total sisa budget yang belum terpakai</div>
+      <div class="remaining-number" id="remainingTotal">Rp0</div>
+      <div class="summary">Akumulasi dari budget harian yang tidak digunakan pada hari-hari yang sudah berjalan.</div>
+      <div id="remainingNotification"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><h3>Hari Ini</h3><span>Sisa dari budget harian</span></div>
+      <div class="mini-stats">
+        <div class="mini-stat"><span>Budget</span><strong id="remainBudgetToday">Rp0</strong></div>
+        <div class="mini-stat"><span>Terpakai</span><strong id="remainUsedToday">Rp0</strong></div>
+        <div class="mini-stat"><span>Sisa</span><strong id="remainToday">Rp0</strong></div>
+      </div>
+      <div id="remainTodayStatus"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h3>Riwayat Sisa Budget</h3><span>Sisa tidak mengubah budget hari berikutnya</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Budget</th><th>Terpakai</th><th>Sisa</th><th>Status</th></tr></thead><tbody id="remainingTable"></tbody></table></div>
+  </div>
+</section>
+
+<section class="page" id="saving">
+  <div class="panel"><div class="panel-title"><h3>Buat Target Tabungan</h3></div>
+    <form id="savingForm"><div class="form-grid">
+      <div class="form-group"><label>Nama Target</label><input id="savingName" placeholder="Contoh: Laptop" required></div>
+      <div class="form-group"><label>Target Nominal</label><input id="savingTarget" type="number" required></div>
+      <div class="form-group"><label>Sudah Terkumpul</label><input id="savingCurrent" type="number" required></div>
+      <div class="form-group"><label>Target Tanggal</label><input id="savingDate" type="date" required></div>
+    </div><button class="primary-btn">+ Tambah Target</button></form>
+  </div>
+  <div class="grid-2" id="savingList"></div>
+</section>
+
+<section class="page" id="emergency">
+  <div class="panel"><div class="panel-title"><h3>Dana Darurat</h3><span>Perencanaan keamanan finansial</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Target Dana Darurat</label><input id="emergencyTarget" type="number"></div>
+      <div class="form-group"><label>Dana Terkumpul</label><input id="emergencyCurrent" type="number"></div>
+      <div class="form-group"><label>Alokasi Bulanan</label><input id="emergencyMonthly" type="number"></div>
+    </div><button class="primary-btn" onclick="saveEmergency()">Simpan Dana Darurat</button>
+  </div>
+  <div class="panel"><div class="budget-main"><h3>Dana Darurat</h3><div class="budget-number" id="emergencyValue">Rp0</div><div class="progress"><div class="progress-bar green" id="emergencyProgress"></div></div><p class="target-info" id="emergencyInfo"></p></div></div>
+</section>
+
+<section class="page" id="report">
+  <div class="cards">
+    <div class="card"><div class="card-label">Pemasukan</div><div class="card-value" id="reportIncome">Rp0</div></div>
+    <div class="card"><div class="card-label">Pengeluaran</div><div class="card-value" id="reportExpense">Rp0</div></div>
+    <div class="card"><div class="card-label">Tabungan</div><div class="card-value" id="reportSaving">Rp0</div></div>
+    <div class="card"><div class="card-label">Dana Darurat</div><div class="card-value" id="reportEmergency">Rp0</div></div>
+    <div class="card"><div class="card-label">Saldo</div><div class="card-value" id="reportBalance">Rp0</div></div>
+    <div class="card"><div class="card-label">Sisa Budget</div><div class="card-value" id="reportRemaining">Rp0</div></div>
+  </div>
+  <div class="grid-2"><div class="panel"><div class="panel-title"><h3>Pengeluaran per Kategori</h3></div><canvas id="reportCategoryChart"></canvas></div><div class="panel"><div class="panel-title"><h3>Pemasukan vs Pengeluaran</h3></div><canvas id="reportIncomeChart"></canvas></div></div>
+  <div class="panel"><div class="panel-title"><h3>Insight Keuangan</h3></div><div id="reportInsight" class="summary"></div></div>
+</section>
+
+<section class="page" id="settings">
+  <div class="panel"><div class="panel-title"><h3>Pengaturan Finora</h3></div><div class="form-group"><label>Nama User</label><input id="userName"></div><button class="primary-btn" onclick="saveSettings()">Simpan Pengaturan</button></div>
+  <div class="panel"><div class="panel-title"><h3>Reset Data</h3></div><p class="summary">Reset semua data transaksi, target, alokasi, dana darurat, dan nama user.</p><button class="danger-btn" style="margin-top:15px" onclick="resetData()">🔄 Reset Semua Data</button></div>
+</section>
+</main>
+</div>
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+<div class="mobile-bottom-nav" id="mobileBottomNav">
+  <button class="active" data-page="dashboard" onclick="mobileGo('dashboard')"><span>📊</span>Home</button>
+  <button data-page="income" onclick="mobileGo('income')"><span>💰</span>Masuk</button>
+  <button data-page="expense" onclick="mobileGo('expense')"><span>💸</span>Keluar</button>
+  <button data-page="remaining" onclick="mobileGo('remaining')"><span>💎</span>Sisa</button>
+  <button data-page="settings" onclick="mobileGo('settings')"><span>☰</span>Menu</button>
+</div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const KEY="finoraDataV2";
+const monthNames=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+const today=new Date();
+let selectedMonth=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}`;
+let calendarDate=new Date(today.getFullYear(),today.getMonth(),1);
+let selectedDate=formatDate(today);
+let charts={};
+let data=JSON.parse(localStorage.getItem(KEY))||{
+  user:"User",incomes:[],expenses:[],savings:[],
+  emergency:{target:12000000,current:0,monthly:500000},
+  allocations:{saving:0,emergency:0,mandatory:0,other:0}
+};
+
+function saveData(){localStorage.setItem(KEY,JSON.stringify(data))}
+function money(n){return new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(Number(n)||0)}
+function formatDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function displayDate(s){const d=new Date(s+"T00:00:00");return `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`}
+function monthKey(s){return s.substring(0,7)}
+function daysInMonth(y,m){return new Date(y,m+1,0).getDate()}
+function escapeHTML(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+function monthIncome(){return data.incomes.filter(x=>monthKey(x.date)===selectedMonth)}
+function monthExpense(){return data.expenses.filter(x=>monthKey(x.date)===selectedMonth)}
+function totalIncome(){return monthIncome().reduce((a,x)=>a+Number(x.amount),0)}
+function totalExpense(){return monthExpense().reduce((a,x)=>a+Number(x.amount),0)}
+function totalSaving(){return data.savings.reduce((a,x)=>a+Number(x.current),0)}
+function totalEmergency(){return Number(data.emergency.current||0)}
+function allocationsTotal(){let a=data.allocations;return Number(a.saving||0)+Number(a.emergency||0)+Number(a.mandatory||0)+Number(a.other||0)}
+function usableFund(){return Math.max(0,totalIncome()-allocationsTotal())}
+function monthDays(){const [y,m]=selectedMonth.split("-").map(Number);return daysInMonth(y,m-1)}
+function fixedDailyBudget(){return usableFund()/monthDays()}
+function expenseOn(date){return data.expenses.filter(x=>x.date===date).reduce((a,x)=>a+Number(x.amount),0)}
+function spentDaysInActiveMonth(){
+  const [y,m]=selectedMonth.split("-").map(Number);
+  if(y===today.getFullYear()&&m===today.getMonth()+1)return today.getDate();
+  return monthDays();
+}
+function usedBudgetToDate(){
+  const budget=fixedDailyBudget();
+  const days=spentDaysInActiveMonth();
+  let total=0;
+  for(let d=1;d<=days;d++){
+    const date=`${selectedMonth}-${String(d).padStart(2,"0")}`;
+    total+=Math.min(expenseOn(date),budget);
+  }
+  return total;
+}
+function totalRemainingBudget(){
+  const budget=fixedDailyBudget(), days=spentDaysInActiveMonth();
+  let total=0;
+  for(let d=1;d<=days;d++){
+    const date=`${selectedMonth}-${String(d).padStart(2,"0")}`;
+    total+=Math.max(0,budget-expenseOn(date));
+  }
+  return total;
+}
+function todayBudgetStatus(){
+  const b=fixedDailyBudget(), used=expenseOn(formatDate(today));
+  return {budget:b,used,surplus:Math.max(0,b-used),over:Math.max(0,used-b)};
+}
+
+const titles={
+ dashboard:["Dashboard","Ringkasan kondisi keuangan kamu."],
+ income:["Pemasukan","Kelola semua sumber pemasukan."],
+ expense:["Pengeluaran","Catat dan kontrol setiap pengeluaran."],
+ calendar:["Kalender","Lihat aktivitas keuangan berdasarkan tanggal."],
+ budget:["Budget Harian","Budget dasar tetap untuk setiap hari dalam bulan."],
+ remaining:["Sisa Budget","Lihat uang budget harian yang berhasil tidak terpakai."],
+ saving:["Tabungan","Buat dan pantau target tabungan."],
+ emergency:["Dana Darurat","Bangun perlindungan finansial kamu."],
+ report:["Laporan","Analisis kondisi keuangan bulanan."],
+ settings:["Pengaturan","Kelola profil dan data Finora."]
+};
+function showPage(page,btn){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  document.getElementById(page).classList.add("active");
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));
+  if(btn)btn.classList.add("active");
+  document.getElementById("pageTitle").textContent=titles[page][0];
+  document.getElementById("pageSubtitle").textContent=titles[page][1];
+  renderAll();
+  if(innerWidth<=800){closeSidebar();document.querySelectorAll(".mobile-bottom-nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));}
+}
+function toggleSidebar(){
+  const sidebar=document.getElementById("sidebar"), overlay=document.getElementById("mobileOverlay");
+  sidebar.classList.toggle("open");
+  overlay.classList.toggle("show",sidebar.classList.contains("open"));
+}
+function closeSidebar(){document.getElementById("sidebar").classList.remove("open");document.getElementById("mobileOverlay").classList.remove("show")}
+function mobileGo(page){
+  const btn=[...document.querySelectorAll('.nav button')].find(x=>x.getAttribute('onclick')?.includes(`showPage('${page}'`));
+  showPage(page,btn);
+  document.querySelectorAll('.mobile-bottom-nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===page));
+}
+function initMonthPicker(){
+  const p=document.getElementById("monthPicker");
+  for(let y=today.getFullYear()-2;y<=today.getFullYear()+2;y++)for(let m=0;m<12;m++){
+    const v=`${y}-${String(m+1).padStart(2,"0")}`,o=document.createElement("option");
+    o.value=v;o.textContent=`${monthNames[m]} ${y}`;p.appendChild(o);
+  }
+  p.value=selectedMonth;updatePeriod();
+}
+function updatePeriod(){
+  const [y,m]=selectedMonth.split("-").map(Number);
+  document.getElementById("sidebarUser").textContent=data.user;
+  document.getElementById("sidebarPeriod").textContent=`${monthNames[m-1]} ${y}`;
+}
+function changeMonth(){
+  selectedMonth=document.getElementById("monthPicker").value;
+  const [y,m]=selectedMonth.split("-").map(Number);
+  calendarDate=new Date(y,m-1,1);
+  renderAll();
+}
+
+document.getElementById("incomeForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  data.incomes.push({id:Date.now(),source:incomeSource.value,amount:Number(incomeAmount.value),date:incomeDate.value,note:incomeNote.value});
+  saveData();e.target.reset();incomeDate.value=formatDate(today);renderAll();toast("✓ Pemasukan berhasil ditambahkan","success");
+});
+function deleteIncome(id){if(confirm("Hapus pemasukan ini?")){data.incomes=data.incomes.filter(x=>x.id!==id);saveData();renderAll()}}
+
+document.getElementById("expenseForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const date=expenseDate.value, before=expenseOn(date);
+  data.expenses.push({id:Date.now(),name:expenseName.value,amount:Number(expenseAmount.value),category:expenseCategory.value,date,note:expenseNote.value});
+  saveData();e.target.reset();expenseDate.value=formatDate(today);renderAll();
+  const budget=fixedDailyBudget(), after=before+Number(document.getElementById("expenseAmount").value||0);
+  if(after>budget)toast(`⚠️ Budget ${displayDate(date)} terlampaui sebesar ${money(after-budget)}.`,"danger");
+  else if(after>budget*.8)toast(`🟡 Kamu sudah menggunakan lebih dari 80% budget ${displayDate(date)}.`,"warning");
+  else toast("✓ Pengeluaran berhasil dicatat.","success");
+});
+function deleteExpense(id){if(confirm("Hapus pengeluaran ini?")){data.expenses=data.expenses.filter(x=>x.id!==id);saveData();renderAll()}}
+
+function renderIncome(){
+  const list=monthIncome().sort((a,b)=>a.date.localeCompare(b.date));
+  incomeTotal.textContent=money(totalIncome());
+  incomeTable.innerHTML=list.length?list.map(x=>`<tr><td>${displayDate(x.date)}</td><td>${escapeHTML(x.source)}</td><td class="income">+ ${money(x.amount)}</td><td>${escapeHTML(x.note||"-")}</td><td><button class="danger-btn" onclick="deleteIncome(${x.id})">Hapus</button></td></tr>`).join(""):`<tr><td colspan="5" class="empty">Belum ada pemasukan bulan ini.</td></tr>`;
+}
+function renderExpenses(){
+  const list=monthExpense().sort((a,b)=>b.date.localeCompare(a.date));
+  expenseTotal.textContent=money(totalExpense());
+  expenseTable.innerHTML=list.length?list.map(x=>`<tr><td>${displayDate(x.date)}</td><td>${escapeHTML(x.name)}</td><td>${escapeHTML(x.category)}</td><td class="expense">- ${money(x.amount)}</td><td>${escapeHTML(x.note||"-")}</td><td><button class="danger-btn" onclick="deleteExpense(${x.id})">Hapus</button></td></tr>`).join(""):`<tr><td colspan="6" class="empty">Belum ada pengeluaran bulan ini.</td></tr>`;
+}
+
+function renderDashboard(){
+  const budget=fixedDailyBudget(), inc=totalIncome(),exp=totalExpense();
+  const balance=inc-exp-allocationsTotal();
+  dashIncome.textContent=money(inc);dashExpense.textContent=money(exp);dashBalance.textContent=money(balance);
+  dashBudget.textContent=money(budget);dashRemaining.textContent=money(totalRemainingBudget());dashEmergency.textContent=money(totalEmergency());
+  const todayStatus=todayBudgetStatus();
+  financialSummary.innerHTML=`Pemasukan bulan ini: <strong>${money(inc)}</strong><br>Total pengeluaran: <strong>${money(exp)}</strong><br>Sisa saldo setelah alokasi: <strong>${money(balance)}</strong><br>Budget dasar per hari: <strong>${money(budget)}</strong><br>Sisa budget yang sudah terkumpul: <strong>${money(totalRemainingBudget())}</strong><br><br>${todayStatus.surplus>0?`<div class="status safe">🎉 Hari ini kamu masih punya sisa budget <strong>${money(todayStatus.surplus)}</strong>.</div>`:todayStatus.over>0?`<div class="status danger">⚠️ Pengeluaran hari ini melebihi budget sebesar <strong>${money(todayStatus.over)}</strong>.</div>`:`<div class="status warning">Budget hari ini sudah digunakan sepenuhnya.</div>`}`;
+  todayDate.textContent=displayDate(formatDate(today));
+  const list=data.expenses.filter(x=>x.date===formatDate(today));
+  todayExpenses.innerHTML=list.length?list.map(x=>`<div class="day-item"><div><strong>${escapeHTML(x.name)}</strong><br><small>${escapeHTML(x.category)}</small></div><div class="expense">- ${money(x.amount)}</div></div>`).join(""):`<div class="empty">Belum ada pengeluaran hari ini.</div>`;
+}
+function renderBudget(){
+  const b=fixedDailyBudget(),s=todayBudgetStatus();
+  budgetToday.textContent=money(b);
+  budgetDescription.innerHTML=`Dana yang boleh digunakan: <strong>${money(usableFund())}</strong><br>Jumlah hari bulan ini: <strong>${monthDays()} hari</strong><br>Rumus: <strong>${money(usableFund())} ÷ ${monthDays()} = ${money(b)}</strong><br>Pengeluaran hari ini: <strong>${money(s.used)}</strong><br>Sisa hari ini: <strong>${money(s.surplus)}</strong>`;
+  budgetStatus.innerHTML=s.over?`<div class="status danger">⚠️ Budget hari ini terlampaui sebesar ${money(s.over)}.</div>`:s.surplus?`<div class="status safe">✓ Kamu masih punya sisa budget ${money(s.surplus)} hari ini.</div>`:`<div class="status warning">Budget hari ini sudah habis digunakan.</div>`;
+  renderAllocation();renderDailyBudget();
+}
+function renderDailyBudget(){
+  const [y,m]=selectedMonth.split("-").map(Number),days=daysInMonth(y,m-1),b=fixedDailyBudget();
+  dailyBudgetList.innerHTML="";
+  for(let d=1;d<=days;d++){
+    const date=`${selectedMonth}-${String(d).padStart(2,"0")}`,used=expenseOn(date),remain=Math.max(0,b-used);
+    const status=used>b?"danger":used>=b*.8?"warning":"safe";
+    dailyBudgetList.innerHTML+=`<div class="day-item"><div><strong>${d} ${monthNames[m-1]}</strong><br><small>${data.expenses.filter(x=>x.date===date).length} transaksi</small></div><div style="text-align:right"><div class="day-total ${status==="danger"?"expense":""}">${money(used)}</div><small>Budget ${money(b)} • ${remain?`Sisa ${money(remain)}`:"Tidak ada sisa"}</small></div></div>`;
+  }
+}
+function renderAllocation(){
+  allocationSaving.value=data.allocations.saving||0;allocationEmergency.value=data.allocations.emergency||0;allocationMandatory.value=data.allocations.mandatory||0;allocationOther.value=data.allocations.other||0;
+  const t=allocationsTotal();
+  allocationWarning.innerHTML=t>totalIncome()?`<div class="status danger">⚠️ Total alokasi ${money(t)} melebihi pemasukan ${money(totalIncome())}.</div>`:`<div class="status safe">✓ Total alokasi ${money(t)} masih sesuai dengan pemasukan.</div>`;
+}
+function saveAllocations(){
+  data.allocations={saving:Number(allocationSaving.value||0),emergency:Number(allocationEmergency.value||0),mandatory:Number(allocationMandatory.value||0),other:Number(allocationOther.value||0)};
+  saveData();renderAll();toast("✓ Alokasi berhasil disimpan.","success");
+}
+
+function renderRemaining(){
+  const b=fixedDailyBudget(),s=todayBudgetStatus(),total=totalRemainingBudget();
+  remainingTotal.textContent=money(total);remainBudgetToday.textContent=money(b);remainUsedToday.textContent=money(s.used);remainToday.textContent=money(s.surplus);
+  remainingNotification.innerHTML=s.surplus?`<div class="status safe">🎉 Kamu berhasil menyisakan <strong>${money(s.surplus)}</strong> dari budget harian hari ini. Ini adalah uang budget yang tidak terpakai.</div>`:s.over?`<div class="status danger">⚠️ Hari ini budget terlampaui sebesar <strong>${money(s.over)}</strong>, jadi belum ada sisa budget untuk hari ini.</div>`:`<div class="status warning">Hari ini budget sudah digunakan sepenuhnya.</div>`;
+  remainTodayStatus.innerHTML=s.surplus?`<div class="status safe">💎 Sisa ${money(s.surplus)} tercatat sebagai sisa budget harian.</div>`:s.over?`<div class="status danger">⚠️ Tidak ada sisa budget karena pengeluaran melebihi batas.</div>`:`<div class="status warning">Tidak ada sisa budget hari ini.</div>`;
+  const [y,m]=selectedMonth.split("-").map(Number),days=spentDaysInActiveMonth();
+  let rows="";
+  for(let d=1;d<=days;d++){
+    const date=`${selectedMonth}-${String(d).padStart(2,"0")}`,used=expenseOn(date),remain=Math.max(0,b-used);
+    rows+=`<tr><td>${displayDate(date)}</td><td>${money(b)}</td><td class="${used>b?"expense":""}">${money(used)}</td><td class="income"><strong>${money(remain)}</strong></td><td>${used>b?"⚠️ Melebihi":remain>0?"✓ Ada sisa":"— Habis"}</td></tr>`;
+  }
+  remainingTable.innerHTML=rows||`<tr><td colspan="5" class="empty">Belum ada hari yang dapat dihitung.</td></tr>`;
+}
+function renderCalendar(){
+  const y=calendarDate.getFullYear(),m=calendarDate.getMonth(),days=daysInMonth(y,m),first=new Date(y,m,1).getDay();
+  calendarTitle.textContent=`${monthNames[m]} ${y}`;calendarGrid.innerHTML=["Min","Sen","Sel","Rab","Kam","Jum","Sab"].map(x=>`<div class="calendar-day-name">${x}</div>`).join("");
+  for(let i=0;i<first;i++)calendarGrid.innerHTML+="<div></div>";
+  const b=fixedDailyBudget();
+  for(let d=1;d<=days;d++){
+    const date=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`,used=expenseOn(date);
+    const status=used>b?"red":used>=b*.8?"yellow":"green";
+    calendarGrid.innerHTML+=`<div class="calendar-cell ${date===formatDate(today)?"today":""} ${date===selectedDate?"selected":""}" onclick="selectCalendarDate('${date}')"><div class="date">${d}</div>${used?`<span class="dot ${status}"></span>`:""}</div>`;
+  }
+  renderSelectedDate();
+}
+function selectCalendarDate(date){selectedDate=date;renderCalendar()}
+function renderSelectedDate(){
+  const list=data.expenses.filter(x=>x.date===selectedDate),total=expenseOn(selectedDate),b=fixedDailyBudget();
+  selectedDateTitle.textContent=displayDate(selectedDate);selectedDayTotal.textContent=money(total);
+  selectedDayExpenses.innerHTML=`<div class="summary" style="margin-bottom:15px">Budget: <strong>${money(b)}</strong><br>Total pengeluaran: <strong>${money(total)}</strong><br>Sisa: <strong>${money(Math.max(0,b-total))}</strong></div>`+(list.length?list.map(x=>`<div class="day-item"><div><strong>${escapeHTML(x.name)}</strong><br><small>${escapeHTML(x.category)}${x.note?" • "+escapeHTML(x.note):""}</small></div><strong class="expense">${money(x.amount)}</strong></div>`).join(""):`<div class="empty">Tidak ada pengeluaran pada tanggal ini.</div>`);
+}
+
+document.getElementById("savingForm").addEventListener("submit",e=>{
+  e.preventDefault();data.savings.push({id:Date.now(),name:savingName.value,target:Number(savingTarget.value),current:Number(savingCurrent.value),date:savingDate.value});
+  saveData();e.target.reset();renderAll();toast("✓ Target tabungan ditambahkan.","success");
+});
+function deleteSaving(id){if(confirm("Hapus target tabungan ini?")){data.savings=data.savings.filter(x=>x.id!==id);saveData();renderAll()}}
+function renderSavings(){
+  savingList.innerHTML=data.savings.length?data.savings.map(x=>{
+    const p=Math.min(100,x.target?x.current/x.target*100:0),rem=Math.max(0,x.target-x.current),now=new Date(),td=new Date(x.date),months=Math.max(1,(td.getFullYear()-now.getFullYear())*12+td.getMonth()-now.getMonth()),monthly=rem/months;
+    return `<div class="panel"><div class="target-header"><h3>${escapeHTML(x.name)}</h3><button class="danger-btn" onclick="deleteSaving(${x.id})">Hapus</button></div><div class="target-amount">${money(x.current)} / ${money(x.target)}</div><div class="progress"><div class="progress-bar" style="width:${p}%"></div></div><div class="target-info">Progress ${p.toFixed(1)}% • Target ${displayDate(x.date)}</div><div class="status safe">Perkiraan tabungan ${money(monthly)} per bulan.</div></div>`;
+  }).join(""):`<div class="panel empty">Belum ada target tabungan.</div>`;
+}
+function saveEmergency(){data.emergency={target:Number(emergencyTarget.value||0),current:Number(emergencyCurrent.value||0),monthly:Number(emergencyMonthly.value||0)};saveData();renderAll();toast("✓ Dana darurat disimpan.","success")}
+function renderEmergency(){
+  const e=data.emergency,p=e.target?Math.min(100,e.current/e.target*100):0,rem=Math.max(0,e.target-e.current),months=e.monthly?Math.ceil(rem/e.monthly):null;
+  emergencyTarget.value=e.target;emergencyCurrent.value=e.current;emergencyMonthly.value=e.monthly;emergencyValue.textContent=money(e.current);emergencyProgress.style.width=p+"%";emergencyInfo.textContent=`${p.toFixed(1)}% tercapai • ${months?`Estimasi ${months} bulan lagi`:"Atur alokasi bulanan untuk melihat estimasi."}`;
+}
+
+function renderReport(){
+  reportIncome.textContent=money(totalIncome());reportExpense.textContent=money(totalExpense());reportSaving.textContent=money(totalSaving());reportEmergency.textContent=money(totalEmergency());reportBalance.textContent=money(totalIncome()-totalExpense()-allocationsTotal());reportRemaining.textContent=money(totalRemainingBudget());
+  const cats={};monthExpense().forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));
+  const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  reportInsight.innerHTML=sorted.length?`Kategori pengeluaran terbesar: <strong>${escapeHTML(sorted[0][0])}</strong> sebesar <strong>${money(sorted[0][1])}</strong>.<br><br>${totalRemainingBudget()>0?`<div class="status safe">🎉 Total sisa budget yang belum terpakai: ${money(totalRemainingBudget())}.</div>`:`<div class="status warning">Belum ada sisa budget yang tercatat.</div>`}`:"Belum cukup data untuk membuat insight.";
+}
+function saveSettings(){const n=userName.value.trim();if(n){data.user=n;saveData();updatePeriod();toast("✓ Pengaturan disimpan.","success")}}
+function resetData(){
+  if(!confirm("⚠️ Reset semua data Finora?"))return;
+  if(!confirm("Tindakan ini tidak dapat dibatalkan. Yakin ingin menghapus SEMUA DATA?"))return;
+  localStorage.removeItem(KEY);location.reload();
+}
+function toast(msg,type="success"){const el=document.createElement("div");el.className=`toast ${type}`;el.textContent=msg;toastWrap.appendChild(el);setTimeout(()=>el.remove(),4200)}
+
+function drawCharts(){
+  Object.values(charts).forEach(c=>c&&c.destroy());charts={};
+  const cats={};monthExpense().forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));
+  charts.a=new Chart(incomeExpenseChart,{type:"bar",data:{labels:["Pemasukan","Pengeluaran"],datasets:[{data:[totalIncome(),totalExpense()]}]},options:{responsive:true,plugins:{legend:{display:false}}}});
+  charts.b=new Chart(categoryChart,{type:"doughnut",data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats)}]},options:{responsive:true}});
+  const [y,m]=selectedMonth.split("-").map(Number),days=daysInMonth(y,m-1);let running=0,labels=[],vals=[];
+  for(let d=1;d<=days;d++){const date=`${selectedMonth}-${String(d).padStart(2,"0")}`,inc=data.incomes.filter(x=>x.date===date).reduce((a,x)=>a+Number(x.amount),0),exp=expenseOn(date);running+=inc-exp;labels.push(d);vals.push(running)}
+  charts.c=new Chart(balanceChart,{type:"line",data:{labels,datasets:[{label:"Saldo",data:vals,tension:.35}]},options:{responsive:true}});
+  charts.d=new Chart(reportCategoryChart,{type:"doughnut",data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats)}]},options:{responsive:true}});
+  charts.e=new Chart(reportIncomeChart,{type:"bar",data:{labels:["Pemasukan","Pengeluaran"],datasets:[{data:[totalIncome(),totalExpense()]}]},options:{responsive:true,plugins:{legend:{display:false}}}});
+}
+function renderAll(){
+  updatePeriod();renderDashboard();renderIncome();renderExpenses();renderBudget();renderRemaining();renderCalendar();renderSavings();renderEmergency();renderReport();drawCharts();
+}
+function init(){
+  initMonthPicker();userName.value=data.user;incomeDate.value=formatDate(today);expenseDate.value=formatDate(today);selectedDate=formatDate(today);renderAll();
+}
+init();
+</script>
+</body>
+</html>
